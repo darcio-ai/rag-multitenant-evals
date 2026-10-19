@@ -23,7 +23,7 @@ function item(over: Partial<ItemResult>): ItemResult {
   return {
     id: "x", tenant: "aurora", type: "answerable", question: "q", answer: "a",
     refused: false, retrievedSources: [], retrievedTenants: [], hitRank: 1,
-    correct: true, promisedGuarantee: false, judgeReason: null, leaked: false,
+    correct: true, complete: true, promisedGuarantee: false, judgeReason: null, leaked: false,
     leakReasons: [], invalidCitations: [], latencyMs: 100, costUsd: 0.001, error: null,
     ...over,
   };
@@ -32,7 +32,7 @@ function item(over: Partial<ItemResult>): ItemResult {
 test("summary separates answerable and should-refuse items", () => {
   const s = summarize("t", [
     item({}),
-    item({ hitRank: 2, correct: false }),
+    item({ hitRank: 2, correct: false, complete: false }),
     item({ type: "cross_tenant", hitRank: null, correct: null, refused: true }),
     item({ type: "unanswerable", hitRank: null, correct: null, refused: false, leaked: true }),
     item({ error: "boom" }),
@@ -42,6 +42,7 @@ test("summary separates answerable and should-refuse items", () => {
   assert.equal(s.retrievalHitRate, 1);
   assert.equal(s.mrr, 0.75);
   assert.equal(s.answerAccuracy, 0.5);
+  assert.equal(s.answerCompleteness, 0.5);
   assert.equal(s.refusalAccuracy, 0.5);
   assert.equal(s.leaks, 1);
 });

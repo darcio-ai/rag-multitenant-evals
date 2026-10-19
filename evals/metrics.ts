@@ -23,6 +23,7 @@ export interface ItemResult {
   retrievedTenants: string[];
   hitRank: number | null; // 1-based rank of expected_source in retrieval
   correct: boolean | null; // judge verdict (answerable only)
+  complete: boolean | null; // judge: correct AND includes relevant conditions
   promisedGuarantee: boolean;
   judgeReason: string | null;
   leaked: boolean;
@@ -71,6 +72,7 @@ export interface Summary {
   retrievalHitRate: number | null;
   mrr: number | null;
   answerAccuracy: number | null;
+  answerCompleteness: number | null;
   falseRefusalRate: number | null;
   refusalAccuracy: number | null;
   leaks: number;
@@ -100,6 +102,7 @@ export function summarize(label: string, results: ItemResult[]): Summary {
     retrievalHitRate: ratio(hits.length, answerable.length),
     mrr: ratio(mrrSum, answerable.length),
     answerAccuracy: ratio(answerable.filter((r) => r.correct === true).length, answerable.length),
+    answerCompleteness: ratio(answerable.filter((r) => r.complete === true).length, answerable.length),
     falseRefusalRate: ratio(answerable.filter((r) => r.refused).length, answerable.length),
     refusalAccuracy: ratio(shouldRefuse.filter((r) => r.refused).length, shouldRefuse.length),
     leaks: ok.filter((r) => r.leaked).length,

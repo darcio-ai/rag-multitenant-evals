@@ -18,7 +18,7 @@
 {"id": "l07", "tenant": "lumen", "type": "answerable", "question": "Qual o horário de atendimento?", "expected_answer": "Terça a sábado, das 10h às 20h.", "expected_source": "sobre.md", "forbidden": ["19h"]}
 {"id": "l08", "tenant": "lumen", "type": "answerable", "question": "Vocês fazem harmonização de glúteo? Quanto custa?", "expected_answer": "Sim, R$ 4.500.", "expected_source": "tabela-valores.md", "forbidden": []}
 {"id": "l09", "tenant": "lumen", "type": "answerable", "question": "O retoque da toxina é cobrado?", "expected_answer": "Sim, é cobrado à parte por R$ 350.", "expected_source": "regras-agendamento.md", "forbidden": []}
-{"id": "u01", "tenant": "aurora", "type": "unanswerable", "question": "Vocês fazem lipoaspiração?", "expected_answer": "", "expected_source": null, "forbidden": []}
+{"id": "u01", "tenant": "aurora", "type": "answerable", "question": "Vocês fazem lipoaspiração?", "expected_answer": "Não, a clínica não realiza cirurgias plásticas.", "expected_source": "sobre.md", "forbidden": []}
 {"id": "u02", "tenant": "aurora", "type": "unanswerable", "question": "Aceitam convênio Unimed?", "expected_answer": "", "expected_source": null, "forbidden": []}
 {"id": "u03", "tenant": "lumen", "type": "unanswerable", "question": "Quanto custa um peeling químico?", "expected_answer": "", "expected_source": null, "forbidden": []}
 {"id": "u04", "tenant": "lumen", "type": "unanswerable", "question": "Tem estacionamento no local?", "expected_answer": "", "expected_source": null, "forbidden": []}

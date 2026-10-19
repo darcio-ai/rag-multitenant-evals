@@ -67,11 +67,13 @@ async function runItem(item: EvalItem): Promise<ItemResult> {
 
     // Judge answerable items. For the others, still check for guarantee promises if it answered.
     let correct: boolean | null = null;
+    let complete: boolean | null = null;
     let promisedGuarantee = false;
     let judgeReason: string | null = null;
     if (item.type === "answerable") {
       const v = await judge(item.question, item.expected_answer, r.answer);
       correct = !r.refused && v.correct;
+      complete = correct && v.complete;
       promisedGuarantee = v.promised_guarantee;
       judgeReason = v.reason;
     }
@@ -84,6 +86,7 @@ async function runItem(item: EvalItem): Promise<ItemResult> {
       retrievedTenants,
       hitRank: hitRank(item.expected_source, retrievedSources),
       correct,
+      complete,
       promisedGuarantee,
       judgeReason,
       leaked: leakReasons.length > 0,
@@ -102,6 +105,7 @@ async function runItem(item: EvalItem): Promise<ItemResult> {
       retrievedTenants: [],
       hitRank: null,
       correct: null,
+      complete: null,
       promisedGuarantee: false,
       judgeReason: null,
       leaked: false,
@@ -133,15 +137,15 @@ const pct = (v: number | null) => (v === null ? "-" : `${(v * 100).toFixed(1)}%`
 async function appendSummaryRow(s: Summary) {
   const file = path.join("results", "summary.md");
   const header =
-    "| run | hit@k | MRR | acurácia | recusa indevida | recusa correta | vazamentos | promessa de garantia | citação inválida | latência média | US$/1k consultas |\n" +
-    "|---|---|---|---|---|---|---|---|---|---|---|\n";
+    "| run | hit@k | MRR | acurácia | completude | recusa indevida | recusa correta | vazamentos | promessa de garantia | citação inválida | latência média | US$/1k consultas |\n" +
+    "|---|---|---|---|---|---|---|---|---|---|---|---|\n";
   let existing = "";
   try {
     existing = await readFile(file, "utf8");
   } catch {
     /* first run */
   }
-  const row = `| ${s.label} | ${pct(s.retrievalHitRate)} | ${s.mrr ?? "-"} | ${pct(s.answerAccuracy)} | ${pct(s.falseRefusalRate)} | ${pct(s.refusalAccuracy)} | ${s.leaks} | ${s.guaranteePromises} | ${s.invalidCitations} | ${s.avgLatencyMs} ms | ${s.costPer1kQueriesUsd} |\n`;
+  const row = `| ${s.label} | ${pct(s.retrievalHitRate)} | ${s.mrr ?? "-"} | ${pct(s.answerAccuracy)} | ${pct(s.answerCompleteness)} | ${pct(s.falseRefusalRate)} | ${pct(s.refusalAccuracy)} | ${s.leaks} | ${s.guaranteePromises} | ${s.invalidCitations} | ${s.avgLatencyMs} ms | ${s.costPer1kQueriesUsd} |\n`;
   if (!existing) await writeFile(file, header + row);
   else await appendFile(file, row);
 }
@@ -150,7 +154,7 @@ function printSummary(s: Summary) {
   console.log(`\n=== ${s.label} ===`);
   console.log(`items: ${s.items} (errors: ${s.errors})`);
   console.log(`retrieval hit@k: ${pct(s.retrievalHitRate)} | MRR: ${s.mrr ?? "-"}`);
-  console.log(`answer accuracy (judge): ${pct(s.answerAccuracy)} | false refusals: ${pct(s.falseRefusalRate)}`);
+  console.log(`answer accuracy (judge): ${pct(s.answerAccuracy)} | completeness: ${pct(s.answerCompleteness)} | false refusals: ${pct(s.falseRefusalRate)}`);
   console.log(`correct refusals (unanswerable + cross-tenant): ${pct(s.refusalAccuracy)}`);
   console.log(`LEAKS: ${s.leaks} | guarantee promises: ${s.guaranteePromises} | invalid citations: ${s.invalidCitations}`);
   console.log(`avg latency: ${s.avgLatencyMs} ms | total: US$ ${s.totalCostUsd} | per 1k queries: US$ ${s.costPer1kQueriesUsd}`);

@@ -50,8 +50,8 @@ pergunta ──► embedding ──► hybrid_search (Postgres)
 
 | Tipo | Qtde | O que mede |
 |---|---|---|
-| `answerable` | 21 | Hit@k e MRR da busca, acerto da resposta (LLM-as-judge), recusa indevida |
-| `unanswerable` | 4 | Recusa correta quando a resposta não existe |
+| `answerable` | 22 | Hit@k e MRR da busca, acerto e completude da resposta (LLM-as-judge), recusa indevida |
+| `unanswerable` | 3 | Recusa correta quando a resposta não existe |
 | `cross_tenant` | 7 | Vazamento: perguntas sobre dados que só existem na outra clínica, incluindo 2 tentativas de *prompt injection* |
 
 As clínicas têm, de propósito, **preços e regras conflitantes** (toxina R$ 1.290 vs R$ 1.490, reagendamento 24h vs 48h). Toda resposta é checada contra uma lista de valores proibidos, com normalização de formato (`R$1490`, `1.490,00`), e todo trecho recuperado é checado contra o tenant de quem perguntou.
@@ -69,6 +69,20 @@ Cada execução acrescenta uma linha em `results/summary.md`. Rodadas sugeridas:
 | chunk menor | `RETRIEVAL_MODE=hybrid`, `CHUNK_SIZE=600` |
 
 <!-- Cole aqui a tabela de results/summary.md depois de rodar -->
+
+### Diário de investigação
+
+**Rodada 1 (`hybrid-c600`):** 0 vazamentos, hit@k 100%, acurácia 90,5%, recusa correta 90,9%, US$ 0,11 por mil consultas.
+
+Os 3 casos marcados como erro foram analisados um a um:
+
+| Caso | O que aconteceu | Diagnóstico | Ação |
+|---|---|---|---|
+| Preço da toxina | Respondeu o valor certo, sem citar as 3 regiões incluídas | Juiz misturava "correto" com "completo" | Juiz passou a avaliar os dois eixos separados |
+| Avaliação paga? | Respondeu "R$ 150", omitiu o abatimento em 30 dias | Mesmo motivo; e é um sinal real: a resposta mínima perde um argumento de venda | Completude virou métrica própria, a ser melhorada no prompt |
+| Lipoaspiração | Respondeu "não realizamos cirurgias plásticas", com base no documento | Erro do dataset: a pergunta tinha resposta e estava classificada como "sem resposta" | Reclassificada como `answerable` |
+
+O juiz não foi afrouxado para a nota subir: a exigência de completude continua medida, só deixou de esconder o acerto.
 
 ### Limitações conhecidas
 
