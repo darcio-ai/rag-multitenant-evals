@@ -60,15 +60,27 @@ As clínicas têm, de propósito, **preços e regras conflitantes** (toxina R$ 1
 
 ### Resultados
 
-Cada execução acrescenta uma linha em `results/summary.md`. Rodadas sugeridas:
+Rodadas no GitHub Actions, mesmo dataset (32 itens), `gpt-4o-mini` para resposta e juiz, `text-embedding-3-small`, top-5. Muda uma variável por vez.
 
-| Rodada | Configuração |
-|---|---|
-| baseline | `RETRIEVAL_MODE=vector`, `CHUNK_SIZE=1000` |
-| híbrida | `RETRIEVAL_MODE=hybrid`, `CHUNK_SIZE=1000` |
-| chunk menor | `RETRIEVAL_MODE=hybrid`, `CHUNK_SIZE=600` |
+| Rodada | hit@5 | MRR | Acurácia | Completude | Recusa indevida | Recusa correta | Vazamentos | Latência | US$/1k consultas |
+|---|---|---|---|---|---|---|---|---|---|
+| **hybrid, chunk 600** (escolhida) | 100% | 0,886 | **100%** | **90,9%** | **0%** | 100% | **0** | 1,49 s | 0,110 |
+| vector, chunk 600 | 100% | **0,955** | 95,5% | 81,8% | 4,5% | 100% | **0** | 1,43 s | 0,109 |
+| hybrid, chunk 1000 | 100% | 0,886 | 100% | 81,8% | 0% | 100% | **0** | 1,38 s | 0,109 |
 
-<!-- Cole aqui a tabela de results/summary.md depois de rodar -->
+### O que os números dizem
+
+- **Isolamento: 0 vazamentos em todas as rodadas**, incluindo as 2 tentativas de *prompt injection*. Esperado, porque o modelo nunca recebe o trecho de outra clínica, mas agora medido.
+- **Busca só vetorial ordena melhor, mas erra mais.** O MRR maior vem de um efeito colateral da busca por texto: termos como "toxina botulínica" aparecem em vários documentos (preços, políticas, cuidados), e o ramo de texto empurra a política de retorno acima da tabela de preços. Mesmo assim, a vetorial recusou uma pergunta que tinha resposta ("Vocês fazem lipoaspiração?" → o documento diz "não realizamos cirurgias plásticas"): sem a palavra-chave, a similaridade semântica ficou baixa. Para atendimento, recusar o que existe é pior que ordenar o certo em 2º lugar dentro do top-5.
+- **Chunk maior não ajudou.** Mesma busca, completude menor.
+- **O gargalo real é completude, não busca.** A resposta certa estava sempre nos trechos (hit@5 = 100%), mas o modelo responde o mínimo: dá o preço da toxina sem dizer que cobre 3 regiões, e o valor da avaliação sem o abatimento em 30 dias. É informação que vende e está sendo descartada.
+- **Cuidado com a leitura:** com 22 perguntas respondíveis, cada item vale 4,5 pontos. Diferença de um item entre rodadas está dentro do ruído do juiz; as conclusões acima se apoiam no padrão dos casos, não só na nota.
+
+### Próximos passos (uma variável por vez)
+
+1. **Prompt v2 para completude:** instruir a incluir condições, prazos e o que o valor cobre quando estiverem no trecho.
+2. **RRF ponderado:** dar mais peso ao ramo semântico na fusão, para recuperar o MRR da vetorial sem perder a robustez da híbrida.
+3. **Ampliar o dataset** para reduzir o ruído por item.
 
 ### Diário de investigação
 
@@ -83,6 +95,8 @@ Os 3 casos marcados como erro foram analisados um a um:
 | Lipoaspiração | Respondeu "não realizamos cirurgias plásticas", com base no documento | Erro do dataset: a pergunta tinha resposta e estava classificada como "sem resposta" | Reclassificada como `answerable` |
 
 O juiz não foi afrouxado para a nota subir: a exigência de completude continua medida, só deixou de esconder o acerto.
+
+**Rodadas 2 a 4:** comparação de configurações (tabela acima).
 
 ### Limitações conhecidas
 

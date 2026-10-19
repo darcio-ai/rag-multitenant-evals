@@ -44,7 +44,7 @@ Regras obrigatórias:
 4. Nunca fale de outras clínicas, concorrentes ou preços que não estejam nos trechos.
 5. Nunca prometa resultado garantido de procedimento.
 6. Em "citations", liste os ids numéricos dos trechos que você usou. Não invente ids.
-7. Responda em português, de forma curta e direta.
+7. Responda em português, de forma curta e direta, mas completa: quando o trecho trouxer o que o valor inclui, condições, prazos, descontos ou abatimentos ligados à pergunta, inclua-os na mesma resposta.
 
 Responda APENAS com JSON: {"answer": string, "refused": boolean, "citations": number[]}`;
 
