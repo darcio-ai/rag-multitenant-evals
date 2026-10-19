@@ -1,0 +1,80 @@
+name: RAG eval
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      retrieval_mode:
+        description: "Retrieval mode"
+        type: choice
+        options: [hybrid, vector]
+        default: hybrid
+      chunk_size:
+        description: "Chunk size (chars)"
+        default: "600"
+      label:
+        description: "Run label (optional)"
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    name: Unit tests + typecheck (no secrets, no network)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+  eval:
+    name: Eval against Supabase + OpenAI
+    # Only on manual runs: each run costs API tokens and rewrites the demo index.
+    if: github.event_name == 'workflow_dispatch'
+    needs: unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency: rag-eval # never two runs re-ingesting the same database at once
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      TENANT_PASSWORD: ${{ secrets.TENANT_PASSWORD }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      RETRIEVAL_MODE: ${{ inputs.retrieval_mode }}
+      CHUNK_SIZE: ${{ inputs.chunk_size }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Create tenants and users
+        run: npm run setup
+      - name: Ingest corpus
+        run: npm run ingest
+      - name: Run eval (fails on any cross-tenant leak)
+        run: npm run eval -- "${{ inputs.label || format('{0}-c{1}', inputs.retrieval_mode, inputs.chunk_size) }}"
+      - name: Publish summary
+        if: always()
+        run: |
+          if [ -f results/summary.md ]; then
+            echo "## Eval results" >> "$GITHUB_STEP_SUMMARY"
+            cat results/summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload detailed results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results-${{ github.run_number }}
+          path: results/
+          if-no-files-found: ignore
