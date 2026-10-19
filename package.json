@@ -5,7 +5,7 @@
   "description": "Multi-tenant RAG prototype with Postgres RLS isolation, hybrid search and an eval harness that measures accuracy, refusals, leakage and cost.",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "setup": "tsx src/setup-tenants.ts",

@@ -79,7 +79,7 @@ Cada execução acrescenta uma linha em `results/summary.md`. Rodadas sugeridas:
 
 ## Como rodar
 
-Pré-requisitos: Node 20+, um projeto Supabase (o plano gratuito serve) e uma chave da OpenAI.
+Pré-requisitos: Node 22+, um projeto Supabase (o plano gratuito serve) e uma chave da OpenAI.
 
 ```bash
 npm install
